@@ -16,16 +16,14 @@ def main():
     option_type = args.option_type
 
     print("\n--- Option Inputs ---")
-    print(f"Stock Price (S): {args.stock_price:.2f}")
-    print(f"Strike Price (K): {args.strike_price:.2f}")
-    print(f"Time to Maturity (T): {args.time_to_maturity} years")
-    print(
-        f"Risk-Free Rate (r): {args.risk_free_rate:.4f} ({(args.risk_free_rate * 100):.2f}%)"
-    )
-    print(f"Volatility (sigma): {args.volatility:.4f} ({(args.volatility * 100):.2f}%)")
-    print(f"MC Simulations: {args.num_simulations:,}")  # {:,} adds commas
+    print(f"Option Type: {option_type.capitalize()}")
+    print(f"Stock Price (S): {S0:.2f}")
+    print(f"Strike Price (K): {K:.2f}")
+    print(f"Time to Maturity (T): {T} years")
+    print(f"Risk-Free Rate (r): {r:.4f} ({(r * 100):.2f}%)")
+    print(f"Volatility (sigma): {sigma:.4f} ({(sigma * 100):.2f}%)")
+    print(f"MC Simulations: {num_simulations:,}")
 
-    # Monte Carlo Simulation
     model = EuropeanOptionPricerModel(
         spot_price=S0,
         strike_price=K,
@@ -54,13 +52,13 @@ def main():
         print(f"Black-Scholes Call Price: {bsm_price_call:.5f}")
 
     if mc_price_call is not None:
-        print(f"Monte Carlo Call Price: {mc_price_call:.5f}")
+        print(f"Monte Carlo Call Price:{mc_price_call:.5f}")
 
     if bsm_price_put is not None:
-        print(f"Black-Scholes Put Price: {bsm_price_put:.5f}")
+        print(f"Black-Scholes Put Price:{bsm_price_put:.5f}")
 
     if mc_price_put is not None:
-        print(f"Monte Carlo Put Price: {mc_price_put:.5f}")
+        print(f"Monte Carlo Put Price:{mc_price_put:.5f}")
 
 
 if __name__ == "__main__":
