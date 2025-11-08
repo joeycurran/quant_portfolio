@@ -18,28 +18,19 @@ class SignalEvent(Event):
         self.type = "SIGNAL"
         self.ticker = ticker
         self.date = date
-        self.direction = direction  # 'BUY', 'SELL', or 'EXIT'
+        self.direction = direction
 
 
 class OrderEvent(Event):
-    """
-    Handles an order to be sent to the ExecutionHandler.
-    """
-
     def __init__(self, ticker, date, quantity, direction):
         self.type = "ORDER"
         self.ticker = ticker
         self.date = date
-        self.quantity = quantity  # e.g., 100
-        self.direction = direction  # 'BUY' or 'SELL'
+        self.quantity = quantity
+        self.direction = direction
 
 
 class FillEvent(Event):
-    """
-    Encapsulates a filled order, as returned from a broker.
-    This is what the Portfolio uses to update its state.
-    """
-
     def __init__(self, ticker, date, quantity, direction, fill_price, commission):
         self.type = "FILL"
         self.ticker = ticker

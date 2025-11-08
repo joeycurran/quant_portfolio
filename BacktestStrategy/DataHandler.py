@@ -21,4 +21,11 @@ class DataHandler:
             return None
 
     def get_next_bar(self):
-        return
+        try:
+            row = next(self.data_iterator)
+            ticker = self.tickers[0]
+            market_event = Event.MarketEvent(ticker, row.Index, row.Close)
+            self.queue.put(market_event)
+            return
+        except StopIteration:
+            return None
