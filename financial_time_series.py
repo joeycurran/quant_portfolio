@@ -81,9 +81,12 @@ def get_data(tickers, start_date, end_date):
         price_cols = ["Open", "High", "Low", "Close", "Adj Close"]
         for col in price_cols:
             if col in data.columns:
-                data[col] = data[col].interpolate(method="time")
-
+                data[col] = data[col].interpolate(
+                    method="time"
+                )  # pandas uses the actual timestamps in your DateTimeIndex to compute the interpolation weights.
+                # it adds data for the reindexed dates using linear interpolation based on time, i.e. half way between two known data points
         # Forward fill Volume
+        # interpolates using previous value for missing volume data, can be bad for certain metrics, weekend volume and holidays always 0
         if "Volume" in data.columns:
             data["Volume"] = data["Volume"].fillna(method="ffill")
         return data

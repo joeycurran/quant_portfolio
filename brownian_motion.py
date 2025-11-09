@@ -88,7 +88,6 @@ def main():
     variance = mc_E_X2 - mean_path[-1] ** 2
     print("Monte Carlo Variance =", variance)
     print("Analytical Variance  =", theory_E_X2 - (s0 * np.exp(r * T)) ** 2)
-    plot_error(T, S, s0, r, mean_path=mean_path)
     return
 
 
