@@ -1,0 +1,26 @@
+# Core scientific stack
+numpy>=1.26.0
+pandas>=2.2.0
+scipy>=1.12.0
+
+# NASA CDAWeb client for OMNI data
+cdasws>=1.7.44
+cdflib>=1.1.0     # for reading .cdf files directly if needed
+spacepy>=0.6.0    # optional; advanced CDF handling (can omit on macOS if hard to build)
+
+# Plotting and visualization
+matplotlib>=3.8.0
+seaborn>=0.13.0
+
+# For accessing NOAA APIs (HTTP requests)
+requests>=2.31.0
+
+# Modeling / statistics (for volatility, EVT, regression later)
+statsmodels>=0.14.0
+arch>=6.2         # for GARCH/volatility modeling
+scikit-learn>=1.5.0
+
+# Notebook & dev utilities
+jupyter>=1.0.0
+ipython>=8.20.0
+tqdm>=4.66.0
