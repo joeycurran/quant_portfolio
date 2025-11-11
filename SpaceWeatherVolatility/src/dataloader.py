@@ -6,7 +6,16 @@ from pyspedas.projects.kyoto import dst, load_ae
 from pyspedas.projects.noaa import noaa_load_kp
 
 TRANGE = ["2009-06-01", "2009-06-15"]
-OUTFILE = Path("../data/space_weather_merged.csv")
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+# top-level data directory
+DATA_DIR = PROJECT_ROOT / "data"
+DATA_DIR.mkdir(exist_ok=True)
+
+# output files under /data
+OUTFILEMERGED = DATA_DIR / "space_weather_merged.csv"
+OUTFILEALIGNED = DATA_DIR / "space_weather_aligned.csv"
 
 
 def _to_df(varname, colname=None):
@@ -20,7 +29,7 @@ def _to_df(varname, colname=None):
     return pd.DataFrame({"time": pd.to_datetime(t, unit="s"), colname: v})
 
 
-def load_omni_data(start_date: str, end_date: str) -> pd.DataFrame:
+def load_omni_data(TRANGE=TRANGE) -> pd.DataFrame:
     omni_data(trange=TRANGE)
     dfs = [
         _to_df("BX_GSE", "BX"),
@@ -37,17 +46,17 @@ def load_omni_data(start_date: str, end_date: str) -> pd.DataFrame:
     return df_omni.sort_values("time").dropna(subset=["time"]).reset_index(drop=True)
 
 
-def load_kyoto_data(start_date: str, end_date: str) -> pd.DataFrame:
+def load_kyoto_data(TRANGE=TRANGE) -> pd.DataFrame:
     dst(trange=TRANGE)
     load_ae(trange=TRANGE)
     df_dst = _to_df("kyoto_dst", "Dst")
     df_ae = _to_df("kyoto_ae", "AE")
     df_kyoto = df_dst.merge(df_ae, on="time", how="outer")
-    df_kyoto = df_kyoto.merge(df_ae, on="time", how="outer")
+    df_kyoto = df_dst.merge(df_ae, on="time", how="outer")
     return df_kyoto.sort_values("time").dropna(subset=["time"]).reset_index(drop=True)
 
 
-def load_noaa_data(start_date: str, end_date: str) -> pd.DataFrame:
+def load_noaa_data(TRANGE=TRANGE) -> pd.DataFrame:
     noaa_load_kp(trange=TRANGE)
     df_kp = _to_df("Kp", "Kp")
 
@@ -61,38 +70,50 @@ def merge_dataframes(dfs: list[pd.DataFrame]) -> pd.DataFrame:
     return merged.sort_values("time").reset_index(drop=True)
 
 
+def allign_time_indices(dfs: list[pd.DataFrame]) -> list[pd.DataFrame]:
+    common_times = set(dfs[0]["time"])
+    for df in dfs[1:]:
+        common_times = common_times.intersection(set(df["time"]))
+    common_times = sorted(common_times)
+
+    aligned_dfs = []
+    for df in dfs:
+        aligned_df = df[df["time"].isin(common_times)].reset_index(drop=True)
+        aligned_dfs.append(aligned_df)
+
+    return aligned_dfs
+
+
+def postprocess_time_alignment(df: pd.DataFrame) -> pd.DataFrame:
+    df["time"] = pd.to_datetime(df["time"])
+    df = df.sort_values("time").set_index("time")
+
+    # Resample everything to 1-hour bins (mean of 60 min)
+    df_hourly = df.resample("1H").mean()
+
+    # Forward-fill Kp within each 3-hour window
+    # First resample Kp to 3-hour bins, then expand to hourly
+    df_kp = df[["Kp"]].resample("3H").mean()
+    df_kp_hourly = df_kp.reindex(df_hourly.index, method="ffill")
+
+    # Replace Kp column with the aligned version
+    df_hourly["Kp"] = df_kp_hourly["Kp"]
+
+    return df_hourly
+
+
 def main():
-    df_omni = load_omni_data(TRANGE[0], TRANGE[1])
-    df_kyoto = load_kyoto_data(TRANGE[0], TRANGE[1])
-    df_noaa = load_noaa_data(TRANGE[0], TRANGE[1])
+    df_omni = load_omni_data(TRANGE)
+    df_kyoto = load_kyoto_data(TRANGE)
+    df_noaa = load_noaa_data(TRANGE)
     df_merged = merge_dataframes([df_omni, df_kyoto, df_noaa])
-    OUTFILE.parent.mkdir(exist_ok=True, parents=True)
-    df_merged.to_csv(OUTFILE, index=False)
+    OUTFILEMERGED.parent.mkdir(exist_ok=True, parents=True)
+    df_merged.to_csv(OUTFILEMERGED, index=False)
+
+    df_aligned = postprocess_time_alignment(df_merged)
+    df_aligned.to_csv(OUTFILEALIGNED)
+    print(f"✅ Saved hourly-aligned dataset to {OUTFILEALIGNED}")
 
 
 if __name__ == "__main__":
     main()
-
-
-# time - common time column
-# Bx - BX_GSE pyspedas.projects.omni.data
-# By - BY_GSE pyspedas.projects.omni.data
-# Bz - BZ_GSE pyspedas.projects.omni.data
-# Bt - magnitude (calc self)
-# Vx - flow_speed x-component pyspedas.projects.omni.data
-# Vy - flow_speed y-component pyspedas.projects.omni.data
-# Vz - flow_speed z-component pyspedas.projects.omni.data
-# flow_speed - flow_speed pyspedas.projects.omni.data
-# proton_density - proton_density pyspedas.projects.omni.data
-# Pdyn - dSolar wind dynamic pressure (calc) proton number density, proton mass, solar wind speed Pdyn​=np​mp​V2
-# Ey - Interplanetary Electric Field, dawn–dusk component) Ey​=−Vx​×Bz​ Ey​=−V, Bz​sin2(θ/2) for coupling method
-# Dst - kyoto_dst projects.kyoto.dst
-# Kp - Kp noaa_load_kp
-# Ap - ap, ap_Mean noaa_load_kp
-# AE - kyoto_ae projects.kyoto.load_ae
-# AL - kyoto_al projects.kyoto.load_ae
-# AU - kyoto_au projects.kyoto.load_ae
-# SYM_H - SYM_H omni_data
-# ASY_H -
-# F10.7 - F10.7 noaa_load_kp
-# Sunspot - Sunspot_Number noaa_load_kp

@@ -7,8 +7,6 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent
 sys.path.append(str(ROOT / "src"))
 
-from api.omni_api import OMNIClient
-
 
 def save_to_csv(df: pd.DataFrame, path: Path):
     """Utility to save DataFrame to CSV with folder creation."""
